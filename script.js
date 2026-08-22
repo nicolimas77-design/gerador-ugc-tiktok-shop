@@ -12,8 +12,10 @@ let currentView = 'home'; // 'home' or 'generator'
 let currentProjectId = null;
 
 function initSupabase() {
-  const url = localStorage.getItem(STORAGE_KEY_SUPABASE_URL);
-  const key = localStorage.getItem(STORAGE_KEY_SUPABASE_KEY);
+  const DEFAULT_URL = 'https://gbucaafkdssbldqndhog.supabase.co';
+  const DEFAULT_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdidWNhYWZrZHNzYmxkcW5kaG9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0MTM4MDYsImV4cCI6MjEwMjk4OTgwNn0.1BRXlI2bD071fDEGHmkzb8nTB5azV_bKAnlhOvRP3QQ';
+  const url = localStorage.getItem(STORAGE_KEY_SUPABASE_URL) || DEFAULT_URL;
+  const key = localStorage.getItem(STORAGE_KEY_SUPABASE_KEY) || DEFAULT_KEY;
   if (url -and key -and window.supabase) {
     try { supabaseClient = window.supabase.createClient(url, key); updateSupabaseBadge(true); return true; } catch(e) { updateSupabaseBadge(false); return false; }
   }
