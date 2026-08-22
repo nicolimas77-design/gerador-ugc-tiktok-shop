@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Vídeos UGC TikTok Shop | by Nicolas Lima</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        obsidian: '#0B0D13',
+                        slateDark: '#0F1218',
+                        cardBg: '#181C27',
+                        cardHover: '#202634',
+                        borderSubtle: '#242B3B',
+                        caramel: '#D4A373',
+                        caramelDark: '#C4915D',
+                        tiktokCyan: '#00F2EA',
+                        tiktokMagenta: '#FF0050'
+                    },
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-obsidian text-slate-100 font-sans min-h-screen selection:bg-caramel/30 selection:text-caramel flex overflow-hidden">
+
+    <!-- Sidebar Navigation (Google AI Studio Style) -->
+    <aside id="sidebar" class="w-64 bg-slateDark border-r border-borderSubtle flex flex-col h-screen fixed lg:static z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0">
+        <!-- Logo / Brand Header -->
+        <div class="p-5 border-b border-borderSubtle flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('home')">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-caramel to-caramelDark flex items-center justify-center shadow-md font-bold text-obsidian text-base">
+                    RF
+                </div>
+                <div>
+                    <h1 class="text-sm font-bold text-white tracking-tight">UGC TikTok Shop</h1>
+                    <p class="text-[10px] text-slate-400 font-medium">by Nicolas Lima</p>
+                </div>
+            </div>
+            <button id="closeSidebarBtn" class="lg:hidden text-slate-400 hover:text-white">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <!-- Navigation Menu -->
+        <div class="flex-1 overflow-y-auto px-3 py-4 space-y-6 custom-scrollbar">
+            <!-- Main Navigation -->
+            <div>
+                <div class="px-3 mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Navegação</div>
+                <nav class="space-y-1">
+                    <button onclick="switchView('home')" id="navHomeBtn" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:bg-cardHover hover:text-white transition-all">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4 text-caramel"></i>
+                        <span>Dashboard Início</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Projects / Folders Section -->
+            <div>
+                <div class="px-3 mb-2 flex items-center justify-between">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Pastas de Bonés</span>
+                    <button onclick="openNewProjectModal()" class="text-caramel hover:text-caramelDark p-1 rounded-md hover:bg-cardHover transition-colors" title="Adicionar Nova Pasta">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <nav id="projectNavList" class="space-y-1">
+                    <!-- Populated dynamically via JS -->
+                </nav>
+            </div>
+        </div>
+
+        <!-- Sidebar Footer / User Profile -->
+        <div class="p-4 border-t border-borderSubtle bg-obsidian/40 flex items-center justify-between">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-7 h-7 rounded-full bg-rose-600 flex items-center justify-center text-white text-xs font-bold">
+                    N
+                </div>
+                <div class="overflow-hidden">
+                    <p class="text-xs font-semibold text-white truncate">nicolaslima77</p>
+                    <p class="text-[10px] text-emerald-400 flex items-center space-x-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        <span>API Conectada</span>
+                    </p>
+                </div>
+            </div>
+            <button onclick="openSettingsModal()" class="text-slate-400 hover:text-caramel p-1.5 rounded-lg hover:bg-cardHover transition-colors" title="Configurações API">
+                <i data-lucide="settings" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden">
+
+        <!-- Top Header Bar -->
+        <header class="h-16 border-b border-borderSubtle bg-slateDark/80 backdrop-blur-md px-4 sm:px-8 flex items-center justify-between z-40">
+            <div class="flex items-center space-x-3">
+                <button id="openSidebarBtn" class="lg:hidden text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-cardHover">
+                    <i data-lucide="menu" class="w-5 h-5"></i>
+                </button>
+                <div id="breadcrumb" class="text-sm font-bold text-white flex items-center space-x-2">
+                    <span>Dashboard</span>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <button onclick="openNewProjectModal()" class="flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-cardBg hover:bg-cardHover border border-borderSubtle text-slate-200 hover:text-white text-xs font-semibold transition-all">
+                    <i data-lucide="folder-plus" class="w-4 h-4 text-caramel"></i>
+                    <span>Nova Pasta de Boné</span>
+                </button>
+                <button onclick="openSettingsModal()" class="flex items-center space-x-2 px-3 py-2 rounded-xl bg-cardBg hover:bg-cardHover border border-borderSubtle text-slate-300 text-xs font-medium">
+                    <i data-lucide="key" class="w-4 h-4 text-caramel"></i>
+                    <span class="hidden sm:inline">API Key</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Dynamic Content View Container -->
+        <main class="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar bg-obsidian">
+
+            <!-- HOME / DASHBOARD VIEW -->
+            <div id="homeView" class="space-y-8">
+                <!-- Welcome Hero -->
+                <div class="bg-gradient-to-r from-cardBg to-slateDark border border-borderSubtle rounded-2xl p-6 sm:p-8 relative overflow-hidden shadow-xl">
+                    <div class="absolute -right-10 -bottom-10 w-80 h-80 bg-caramel/5 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="relative z-10 max-w-2xl">
+                        <span class="px-2.5 py-1 text-xs font-bold rounded-md bg-caramel/10 text-caramel border border-caramel/20 inline-block mb-3">
+                            Gerador de Vídeos UGC TikTok Shop
+                        </span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mb-2">
+                            Selecione uma pasta de boné ou crie uma nova
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed mb-6">
+                            Cada pasta armazena o banco de imagens padronizadas em estúdio. O Google Gemini analisa cada modelo para gerar 60 roteiros UGC profissionais com prompts anti-distorção para o Google Flow.
+                        </p>
+                        <button onclick="openNewProjectModal()" class="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-caramel to-caramelDark text-obsidian font-bold text-xs shadow-lg shadow-caramel/20 hover:opacity-90 transition-all">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                            <span>Adicionar Nova Pasta de Boné</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Projects Grid -->
+                <div>
+                    <h3 class="text-base font-bold text-white mb-4 flex items-center space-x-2">
+                        <i data-lucide="folder-kanban" class="w-5 h-5 text-caramel"></i>
+                        <span>Pastas de Bonés Cadastradas</span>
+                    </h3>
+                    <div id="projectsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROJECT GENERATOR VIEW -->
+            <div id="projectGeneratorView" class="space-y-6 hidden">
+                <!-- Project Header Banner -->
+                <div class="bg-cardBg border border-borderSubtle rounded-2xl p-6 relative overflow-hidden shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <div class="flex items-center space-x-2 mb-2">
+                            <span id="projBadge" class="px-2.5 py-0.5 text-xs font-bold rounded-md bg-tiktokCyan/10 text-tiktokCyan border border-tiktokCyan/20">
+                                Pasta Ativa
+                            </span>
+                            <span id="projImageCount" class="text-xs text-slate-400 font-medium">0 imagens mapeadas</span>
+                        </div>
+                        <h2 id="projTitle" class="text-2xl font-bold text-white">Nome do Boné</h2>
+                        <p id="projDesc" class="text-xs sm:text-sm text-slate-300 mt-1">Detalhes e especificações do modelo.</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button id="generatePromptsBtn" class="flex items-center space-x-2 px-5 py-3 rounded-xl bg-gradient-to-r from-caramel to-caramelDark hover:opacity-90 text-obsidian font-bold text-xs shadow-lg shadow-caramel/20 transition-all">
+                            <i data-lucide="wand-2" class="w-4 h-4"></i>
+                            <span>Gerar 60 Prompts UGC (Gemini)</span>
+                        </button>
+                        <button onclick="toggleImageLibrary()" class="flex items-center space-x-2 px-4 py-3 rounded-xl bg-slateDark hover:bg-cardHover border border-borderSubtle text-slate-200 text-xs font-medium transition-all">
+                            <i data-lucide="images" class="w-4 h-4 text-caramel"></i>
+                            <span id="libraryBtnText">Ver Imagens</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Collapsible Image Library Grid -->
+                <section id="imageLibrarySection" class="hidden transition-all duration-300">
+                    <div class="bg-cardBg border border-borderSubtle rounded-2xl p-6 shadow-xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                                <i data-lucide="folder-open" class="w-4 h-4 text-caramel"></i>
+                                <span id="libraryTitle">Banco de Imagens da Pasta</span>
+                            </h3>
+                            <button onclick="toggleImageLibrary()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+                                <i data-lucide="x" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <div id="imageGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Loading State -->
+                <section id="loadingSection" class="hidden py-16 text-center">
+                    <div class="inline-flex flex-col items-center justify-center p-8 bg-cardBg border border-borderSubtle rounded-2xl shadow-2xl">
+                        <div class="relative w-14 h-14 mb-4">
+                            <div class="absolute inset-0 rounded-full border-4 border-caramel/20 border-t-caramel animate-spin"></div>
+                            <div class="absolute inset-2 rounded-full border-4 border-tiktokCyan/20 border-b-tiktokCyan animate-spin" style="animation-direction: reverse; animation-duration: 1.5s;"></div>
+                        </div>
+                        <h3 class="text-base font-bold text-white mb-1">Gemini está gerando 60 roteiros UGC...</h3>
+                        <p class="text-xs text-slate-400 max-w-xs">Analisando imagens da pasta, aplicando engenharia de prompt anti-distorção e POV humano.</p>
+                    </div>
+                </section>
+
+                <!-- Results Section -->
+                <section id="resultsSection" class="space-y-6">
+                    <div id="emptyState" class="text-center py-16 bg-cardBg/50 border border-borderSubtle rounded-2xl border-dashed">
+                        <div class="w-12 h-12 rounded-2xl bg-cardBg border border-borderSubtle flex items-center justify-center mx-auto mb-3 text-caramel">
+                            <i data-lucide="video" class="w-6 h-6"></i>
+                        </div>
+                        <h3 class="text-sm font-bold text-white mb-1">Nenhum roteiro gerado para esta pasta</h3>
+                        <p class="text-xs text-slate-400 max-w-sm mx-auto mb-4">
+                            Clique em "Gerar 60 Prompts UGC (Gemini)" para criar os vídeos baseados nas imagens e detalhes deste boné.
+                        </p>
+                        <button onclick="document.getElementById('generatePromptsBtn').click()" class="px-4 py-2 bg-caramel text-obsidian font-bold text-xs rounded-xl hover:bg-caramelDark transition-all">
+                            Gerar Agora
+                        </button>
+                    </div>
+                </section>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- New Project / Folder Modal -->
+    <div id="newProjectModal" class="fixed inset-0 z-50 bg-obsidian/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-cardBg border border-borderSubtle rounded-2xl max-w-lg w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                    <i data-lucide="folder-plus" class="w-5 h-5 text-caramel"></i>
+                    <span>Adicionar Nova Pasta de Boné</span>
+                </h3>
+                <button onclick="closeNewProjectModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form id="newProjectForm" onsubmit="handleCreateProject(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Nome da Pasta (slug ex: trucker-couro)</label>
+                    <input type="text" id="newProjFolder" required placeholder="ex: trucker-couro" class="w-full bg-slateDark border border-borderSubtle rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-caramel font-mono">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Nome do Boné / Produto</label>
+                    <input type="text" id="newProjName" required placeholder="ex: Boné Trucker Couro legítimo" class="w-full bg-slateDark border border-borderSubtle rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-caramel">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Descrição e Acabamento</label>
+                    <textarea id="newProjDesc" rows="3" required placeholder="Tecido suede marrom, aba bordada, patch em alto relevo..." class="w-full bg-slateDark border border-borderSubtle rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-caramel resize-none"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Selecionar Imagens do Computador (Múltiplas)</label>
+                    <input type="file" id="newProjFiles" multiple accept="image/*" class="w-full bg-slateDark border border-borderSubtle rounded-xl px-4 py-2.5 text-xs text-slate-300 file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-caramel file:text-obsidian hover:file:bg-caramelDark cursor-pointer">
+                    <p class="text-[10px] text-slate-400 mt-1">Selecione as fotos da pasta de estúdio do novo boné. As imagens serão carregadas e analisadas pelo sistema.</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Ou digitar nomes de arquivos (opcional se anexou acima)</label>
+                    <textarea id="newProjImages" rows="2" placeholder="img1.png, img2.png..." class="w-full bg-slateDark border border-borderSubtle rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-caramel font-mono resize-none"></textarea>
+                </div>
+                <div class="flex items-center justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeNewProjectModal()" class="px-4 py-2 rounded-xl bg-slateDark text-slate-300 hover:text-white text-xs font-medium">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-caramel hover:bg-caramelDark text-obsidian font-bold text-xs">Criar Pasta e Projeto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 z-50 bg-obsidian/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-cardBg border border-borderSubtle rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                    <i data-lucide="key" class="w-5 h-5 text-caramel"></i>
+                    <span>Configuração da Gemini API</span>
+                </h3>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-400 mb-4">
+                Sua chave de API do Gemini para autenticar as requisições de geração de 60 prompts UGC.
+            </p>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Gemini API Key</label>
+                    <input type="password" id="apiKeyInput" placeholder="AQ..." class="w-full bg-slateDark border border-borderSubtle rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-caramel font-mono">
+                </div>
+                <div class="border-t border-borderSubtle pt-3">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider">Supabase URL</label>
+                        <span id="supabaseStatusBadge" class="text-[10px] font-mono text-slate-400">Desconectado</span>
+                    </div>
+                    <input type="text" id="supabaseUrlInput" placeholder="https://xyzcompany.supabase.co" class="w-full bg-slateDark border border-borderSubtle rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-caramel font-mono mb-3">
+                    
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Supabase Anon Key</label>
+                    <input type="password" id="supabaseKeyInput" placeholder="eyJhbGciOi..." class="w-full bg-slateDark border border-borderSubtle rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-caramel font-mono">
+                </div>
+                <div class="flex items-center justify-end space-x-3 pt-2">
+                    <button onclick="saveAllSettings()" class="px-5 py-2.5 rounded-xl bg-caramel hover:bg-caramelDark text-obsidian font-bold text-xs transition-all">
+                        Salvar e Conectar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 bg-slateDark border border-borderSubtle text-white px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div id="toastIcon" class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+            <i data-lucide="check" class="w-4 h-4"></i>
+        </div>
+        <span id="toastMessage" class="text-xs font-medium">Ação realizada com sucesso!</span>
+    </div>
+
+    <!-- Script Application Logic -->
+    <script src="script.js"></script>
+</body>
+</html>
