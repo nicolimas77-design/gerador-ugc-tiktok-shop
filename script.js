@@ -101,7 +101,7 @@ function renderSidebarProjects() {
   const navList = document.getElementById('projectNavList');
   navList.innerHTML = projects.map(proj => {
     const isActive = currentView === 'generator' && currentProjectId === proj.id;
-    return '<button onclick="switchView(\'generator\', \'' + proj.id + '\')" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ' + (isActive ? 'bg-caramel/15 text-caramel border border-caramel/30 font-semibold' : 'text-slate-400 hover:bg-cardHover hover:text-white') + '"><i data-lucide="folder" class="w-4 h-4 text-caramel shrink-0"></i><span class="truncate">' + proj.name + '</span></button>';
+    return '<div class="flex items-center gap-1"><button onclick="switchView(\'generator\', \'' + proj.id + '\')" class="flex-1 flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ' + (isActive ? 'bg-caramel/15 text-caramel border border-caramel/30 font-semibold' : 'text-slate-400 hover:bg-cardHover hover:text-white') + '"><i data-lucide="folder" class="w-4 h-4 text-caramel shrink-0"></i><span class="truncate">' + proj.name + '</span></button><button onclick="event.stopPropagation(); deleteProject(\'' + proj.id + '\')" class="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10" title="Apagar pasta"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button></div>';
   }).join('');
 }
 
@@ -111,7 +111,7 @@ function renderHomeDashboard() {
     grid.innerHTML = '<p class="text-xs text-slate-500 col-span-full">Nenhuma pasta cadastrada ainda. Clique em Adicionar Nova Pasta.</p>';
     return;
   }
-  grid.innerHTML = projects.map(proj => '<div onclick="switchView(\'generator\', \'' + proj.id + '\')" class="glass-panel rounded-2xl p-6 cursor-pointer hover:border-caramel/50 transition-all group flex flex-col justify-between"><div><div class="flex items-center justify-between mb-3"><span class="px-2 py-0.5 text-[10px] font-bold rounded bg-tiktokCyan/10 text-tiktokCyan border border-tiktokCyan/20 uppercase font-mono">/' + proj.folder + '</span><span class="text-xs text-slate-400 flex items-center space-x-1"><i data-lucide="images" class="w-3.5 h-3.5 text-caramel"></i><span>' + proj.images.length + ' fotos</span></span></div><h4 class="text-base font-bold text-white group-hover:text-caramel transition-colors mb-2">' + proj.name + '</h4><p class="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-4">' + proj.description + '</p></div><div class="flex items-center justify-between pt-4 border-t border-borderSubtle text-xs font-semibold text-caramel"><span>Abrir gerador de roteiros</span><i data-lucide="arrow-right" class="w-4 h-4 transform group-hover:translate-x-1 transition-transform"></i></div></div>').join('');
+  grid.innerHTML = projects.map(proj => '<div class="glass-panel rounded-2xl p-6 hover:border-caramel/50 transition-all group flex flex-col justify-between"><div onclick="switchView(\'generator\', \'' + proj.id + '\')" class="cursor-pointer"><div class="flex items-center justify-between mb-3"><span class="px-2 py-0.5 text-[10px] font-bold rounded bg-tiktokCyan/10 text-tiktokCyan border border-tiktokCyan/20 uppercase font-mono">/' + proj.folder + '</span><span class="text-xs text-slate-400 flex items-center space-x-1"><i data-lucide="images" class="w-3.5 h-3.5 text-caramel"></i><span>' + proj.images.length + ' fotos</span></span></div><h4 class="text-base font-bold text-white group-hover:text-caramel transition-colors mb-2">' + proj.name + '</h4><p class="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-4">' + proj.description + '</p></div><div class="flex items-center justify-between pt-4 border-t border-borderSubtle"><button onclick="switchView(\'generator\', \'' + proj.id + '\')" class="text-xs font-semibold text-caramel flex items-center gap-1">Abrir gerador <i data-lucide="arrow-right" class="w-4 h-4"></i></button><button onclick="event.stopPropagation(); deleteProject(\'' + proj.id + '\')" class="px-2.5 py-1 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20 text-xs font-semibold hover:bg-rose-500/20">Apagar</button></div></div>').join('');
   lucide.createIcons();
 }
 
@@ -131,8 +131,7 @@ function renderProjectGenerator(proj) {
   } else {
     imgGrid.innerHTML = proj.images.map((img, idx) => {
       const imgSrc = cache[img] || (proj.folder + '/' + img);
-      const fallback = '<div class="w-full h-full flex items-center justify-center bg-obsidian text-[10px] text-slate-500 p-2 text-center">Imagem nao encontrada<br><span class="font-mono text-caramel">' + img + '</span></div>';
-      return '<div class="relative bg-slateDark border border-borderSubtle rounded-xl overflow-hidden aspect-square flex items-center justify-center group" title="' + img + '"><img src="' + imgSrc + '" alt="' + img + '" class="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" onerror="this.outerHTML=\'' + fallback.replace(/'/g, "\\'") + '\'"><div class="absolute inset-0 bg-obsidian/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><span class="text-[9px] font-mono text-caramel font-bold">#' + (idx+1) + '</span></div></div>';
+      return '<div class="relative bg-slateDark border border-borderSubtle rounded-xl overflow-hidden aspect-square flex items-center justify-center group" title="' + img + '"><img src="' + imgSrc + '" alt="' + img + '" class="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><div class="w-full h-full hidden items-center justify-center bg-obsidian text-[10px] text-slate-500 p-2 text-center flex-col"><span>Imagem nao encontrada</span><span class="font-mono text-caramel text-[9px] break-all">' + img + '</span></div><div class="absolute inset-0 bg-obsidian/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none"><span class="text-[9px] font-mono text-caramel font-bold">#' + (idx+1) + '</span></div></div>';
     }).join('');
   }
 
@@ -233,6 +232,28 @@ function finalizeProject(folder, name, description, images, imageMap) {
   switchView('generator', newProj.id);
   showToast('Pasta /' + folder + ' criada com ' + images.length + ' imagens!', 'success');
 }
+
+function deleteProject(projectId) {
+  const proj = projects.find(p => p.id === projectId);
+  if (!proj) return;
+  if (!confirm('Apagar a pasta /' + proj.folder + ' (' + proj.name + ')? Esta acao nao pode ser desfeita e apagara as imagens em cache.')) return;
+  projects = projects.filter(p => p.id !== projectId);
+  localStorage.setItem(STORAGE_KEY_PROJECTS, JSON.stringify(projects));
+  try { localStorage.removeItem('ugc_image_cache_' + proj.folder); } catch(e){}
+  if (currentProjectId === projectId) {
+    currentProjectId = null;
+    switchView('home');
+  } else {
+    renderSidebarProjects();
+    renderHomeDashboard();
+  }
+  showToast('Pasta /' + proj.folder + ' apagada.', 'success');
+}
+function deleteCurrentProject() {
+  if (!currentProjectId) { showToast('Nenhuma pasta selecionada.', 'error'); return; }
+  deleteProject(currentProjectId);
+}
+
 
 async function generateUgcPrompts() {
   if (!apiKey) { openSettingsModal(); showToast('Configure sua Gemini API Key primeiro.', 'error'); return; }
