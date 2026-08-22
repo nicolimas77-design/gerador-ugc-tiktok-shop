@@ -270,12 +270,16 @@
                     <textarea id="newProjDesc" rows="3" required placeholder="Tecido suede marrom, aba bordada, patch em alto relevo..." class="w-full bg-slateDark border border-borderSubtle rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-caramel resize-none"></textarea>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Selecionar Imagens do Computador (Múltiplas)</label>
-                    <input type="file" id="newProjFiles" multiple accept="image/*" class="w-full bg-slateDark border border-borderSubtle rounded-xl px-4 py-2.5 text-xs text-slate-300 file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-caramel file:text-obsidian hover:file:bg-caramelDark cursor-pointer">
-                    <p class="text-[10px] text-slate-400 mt-1">Selecione as fotos da pasta de estúdio do novo boné. As imagens serão carregadas e analisadas pelo sistema.</p>
+                    <label class="block text-xs font-semibold text-caramel uppercase tracking-wider mb-1">1. Anexar PASTA completa (recomendado - Gemini lê as fotos)</label>
+                    <input type="file" id="newProjFolderFiles" webkitdirectory directory multiple accept="image/*" class="w-full bg-slateDark border border-caramel/30 rounded-xl px-4 py-2.5 text-xs text-slate-300 file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-caramel file:text-obsidian hover:file:bg-caramelDark cursor-pointer">
+                    <p class="text-[10px] text-caramel mt-1">Selecione a PASTA inteira do ensaio. A API do Gemini vai ler as fotos dentro para gerar os prompts.</p>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Ou digitar nomes de arquivos (opcional se anexou acima)</label>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">2. Ou selecionar imagens avulsas (múltiplas)</label>
+                    <input type="file" id="newProjFiles" multiple accept="image/*" class="w-full bg-slateDark border border-borderSubtle rounded-xl px-4 py-2.5 text-xs text-slate-300 file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-700 file:text-white hover:file:bg-slate-600 cursor-pointer">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">3. Ou digitar nomes (opcional)</label>
                     <textarea id="newProjImages" rows="2" placeholder="img1.png, img2.png..." class="w-full bg-slateDark border border-borderSubtle rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-caramel font-mono resize-none"></textarea>
                 </div>
                 <div class="flex items-center justify-end space-x-3 pt-2">
