@@ -264,17 +264,24 @@
                                 <span id="timeEstimate" class="text-xs text-slate-400 font-mono">~45s restantes</span>
                             </div>
                         </div>
-                        <!-- Produto Identificado -->
-                        <div id="productIdentifiedBar" class="flex items-center justify-center gap-3 mb-6">
-                            <span class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-400">
-                                <i data-lucide="badge-check" class="w-4 h-4"></i>
-                                Produto identificado
-                            </span>
-                            <i data-lucide="arrow-right" class="w-4 h-4 text-caramel"></i>
-                            <span id="productIdentifiedName" class="px-3 py-1.5 rounded-full bg-caramel/10 border border-caramel/20 text-xs font-bold text-caramel max-w-[200px] truncate">Boné</span>
-                            <span class="hidden sm:inline-flex w-8 h-8 rounded-xl bg-gradient-to-br from-caramel to-caramelDark items-center justify-center text-obsidian">
-                                <i data-lucide="crown" class="w-4 h-4"></i>
-                            </span>
+                        <!-- Losango Premium - Produto Identificado -->
+                        <div class="flex justify-center mb-8">
+                            <div id="diamondCard" class="relative w-[220px] h-[220px] sm:w-[260px] sm:h-[260px] flex items-center justify-center">
+                                <div class="absolute inset-0 bg-gradient-to-br from-caramel/20 via-cardBg to-tiktokCyan/10 rotate-45 rounded-[28px] border border-caramel/20 shadow-[0_20px_50px_rgba(0,0,0,0.4),0_0_30px_rgba(212,163,115,0.15)]"></div>
+                                <div class="absolute inset-[10px] bg-obsidian/40 rotate-45 rounded-[20px] border border-white/[0.04]"></div>
+                                <div class="relative z-10 -rotate-0 flex flex-col items-center text-center px-6 w-full">
+                                    <div class="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-3">
+                                        <i data-lucide="badge-check" class="w-5 h-5"></i>
+                                    </div>
+                                    <p class="text-[11px] font-bold tracking-widest uppercase text-emerald-400">Produto identificado</p>
+                                    <i data-lucide="arrow-down" class="w-4 h-4 text-caramel my-2 animate-bounce"></i>
+                                    <p id="productIdentifiedName" class="text-sm font-extrabold text-white leading-tight min-h-[36px] flex items-center justify-center"></p>
+                                    <span id="productIdentifiedCursor" class="inline-block w-[2px] h-4 bg-caramel ml-1 animate-pulse"></span>
+                                    <div class="mt-3 w-7 h-7 rounded-lg bg-gradient-to-br from-caramel to-caramelDark flex items-center justify-center text-obsidian shadow-md">
+                                        <i data-lucide="crown" class="w-4 h-4"></i>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <!-- Progress bar -->
                         <div class="w-full bg-obsidian rounded-full h-2.5 border border-borderSubtle overflow-hidden mb-2">

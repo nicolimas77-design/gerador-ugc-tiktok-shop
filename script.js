@@ -484,7 +484,21 @@ async function generateUgcPrompts() {
   loadingSection.classList.remove('hidden');
   resultsSection.innerHTML = '';
   renderLiveCarousel(proj);
-  const pidEl = document.getElementById('productIdentifiedName'); if(pidEl) pidEl.textContent = proj.name;
+  const pidEl = document.getElementById('productIdentifiedName');
+  const cursor = document.getElementById('productIdentifiedCursor');
+  if(pidEl){
+    pidEl.textContent = '';
+    let i = 0;
+    const full = proj.name;
+    const type = () => {
+      if(i <= full.length){
+        pidEl.textContent = full.slice(0,i);
+        i++;
+        setTimeout(type, 35);
+      } else if(cursor) cursor.style.display = 'none';
+    };
+    type();
+  }
   lucide.createIcons();
   updateStudioProgress(0, 60, 1, 4, 0, '~50s restantes');
   proj.generatedIdeas = [];
