@@ -216,15 +216,37 @@
                     </div>
                 </section>
 
-                <!-- Loading State -->
-                <section id="loadingSection" class="hidden py-16 text-center">
-                    <div class="inline-flex flex-col items-center justify-center p-8 bg-cardBg border border-borderSubtle rounded-2xl shadow-2xl">
-                        <div class="relative w-14 h-14 mb-4">
-                            <div class="absolute inset-0 rounded-full border-4 border-caramel/20 border-t-caramel animate-spin"></div>
-                            <div class="absolute inset-2 rounded-full border-4 border-tiktokCyan/20 border-b-tiktokCyan animate-spin" style="animation-direction: reverse; animation-duration: 1.5s;"></div>
+                <!-- Studio Ao Vivo - Loading State -->
+                <section id="loadingSection" class="hidden py-6">
+                    <div class="bg-cardBg border border-borderSubtle rounded-2xl p-6 sm:p-8 shadow-2xl overflow-hidden">
+                        <!-- Header -->
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                            <div>
+                                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                                    <span class="relative flex h-2.5 w-2.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span></span>
+                                    Estúdio Ao Vivo — Gemini analisando sua pasta
+                                </h3>
+                                <p class="text-xs text-slate-400 mt-1">Foco total nos detalhes do boné • Prompts EN 220-300 palavras</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span id="batchCounter" class="px-3 py-1.5 rounded-xl bg-obsidian border border-borderSubtle text-xs font-mono font-bold text-caramel">Lote 1 de 4</span>
+                                <span id="timeEstimate" class="text-xs text-slate-400 font-mono">~45s restantes</span>
+                            </div>
                         </div>
-                        <h3 class="text-base font-bold text-white mb-1">Gemini está gerando 60 roteiros UGC...</h3>
-                        <p class="text-xs text-slate-400 max-w-xs">Analisando imagens da pasta, aplicando engenharia de prompt anti-distorção e POV humano.</p>
+                        <!-- Progress bar -->
+                        <div class="w-full bg-obsidian rounded-full h-2.5 border border-borderSubtle overflow-hidden mb-2">
+                            <div id="progressBar" class="h-full bg-gradient-to-r from-caramel to-tiktokCyan rounded-full transition-all duration-700 ease-out" style="width: 8%"></div>
+                        </div>
+                        <div class="flex justify-between text-[10px] font-mono text-slate-500 mb-6">
+                            <span id="progressText">0 / 60 roteiros</span>
+                            <span id="progressPercent">8%</span>
+                        </div>
+                        <!-- Carousel -->
+                        <div id="liveCarousel" class="flex gap-2 overflow-hidden mb-6 pb-2"></div>
+                        <!-- Stages -->
+                        <div id="stagesGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                            <!-- populated via JS -->
+                        </div>
                     </div>
                 </section>
 

@@ -72,6 +72,46 @@ async function saveIdeasToSupabase(proj) {
 function supabasePublicUrl(folder, filename) {
   return 'https://gbucaafkdssbldqndhog.supabase.co/storage/v1/object/public/cap-images/' + folder + '/' + encodeURIComponent(filename);
 }
+const STUDIO_STAGES = [
+  { label: 'Analisando textura', sub: 'suede aveludado', icon: 'texture' },
+  { label: 'Mapeando patch 3D', sub: 'relevo & simbolos', icon: 'patch' },
+  { label: 'Lendo bordado', sub: 'posicao & fio', icon: 'stitch' },
+  { label: 'Criando hooks', sub: 'gancho 3s TikTok', icon: 'hook' },
+  { label: 'Escrevendo prompts', sub: 'EN 220-300w', icon: 'prompt' },
+  { label: 'Blindando anti-dist.', sub: 'geometria & cor', icon: 'shield' }
+];
+function renderStages(activeIdx) {
+  const grid = document.getElementById('stagesGrid');
+  if (!grid) return;
+  const icons = {
+    texture: '<svg class="w-7 h-7 svg-float" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9" stroke-dasharray="4 4"/></svg>',
+    patch: '<svg class="w-7 h-7 svg-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="M12 8v8M8 12h8"/></svg>',
+    stitch: '<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 12h16" stroke-dasharray="6 3"/><path d="M6 8l2 4-2 4M18 8l-2 4 2 4"/></svg>',
+    hook: '<svg class="w-7 h-7 svg-float" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>',
+    prompt: '<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="3" width="16" height="17" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',
+    shield: '<svg class="w-7 h-7 svg-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l7 4v6c0 4-3 6-7 8-4-2-7-4-7-8V7l7-4z"/><path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+  };
+  grid.innerHTML = STUDIO_STAGES.map((s, i) => {
+    const state = i < activeIdx ? 'done' : i === activeIdx ? 'active' : '';
+    const dot = i < activeIdx ? '<span class="w-2 h-2 rounded-full bg-emerald-500"></span>' : i === activeIdx ? '<span class="w-2 h-2 rounded-full bg-caramel live-dot"></span>' : '<span class="w-2 h-2 rounded-full bg-slate-600"></span>';
+    return '<div class="stage-card bg-obsidian border border-borderSubtle rounded-xl p-3 flex flex-col items-center text-center gap-2 ' + state + '"><div class="stage-icon w-10 h-10 rounded-xl bg-cardBg border border-borderSubtle flex items-center justify-center ' + (i===activeIdx?'text-caramel border-caramel/30': i<activeIdx?'text-emerald-400 border-emerald-500/20':'text-slate-500') + '">' + icons[s.icon] + '</div><div><p class="text-[11px] font-bold ' + (i<=activeIdx?'text-white':'text-slate-400') + '">' + s.label + '</p><p class="text-[10px] text-slate-500">' + s.sub + '</p></div><div class="flex items-center gap-1 mt-1">' + dot + '<span class="text-[10px] font-mono ' + (i<activeIdx?'text-emerald-400': i===activeIdx?'text-caramel':'text-slate-500') + '">' + (i<activeIdx?'concluido': i===activeIdx?'ao vivo':'pendente') + '</span></div></div>';
+  }).join('');
+}
+function updateStudioProgress(done, total, batch, totalBatches, stageIdx, estimate) {
+  const pct = Math.round((done/total)*100);
+  const bar = document.getElementById('progressBar'); if(bar) bar.style.width = pct + '%';
+  const txt = document.getElementById('progressText'); if(txt) txt.textContent = done + ' / ' + total + ' roteiros';
+  const pc = document.getElementById('progressPercent'); if(pc) pc.textContent = pct + '%';
+  const bc = document.getElementById('batchCounter'); if(bc) bc.textContent = 'Lote ' + batch + ' de ' + totalBatches;
+  const te = document.getElementById('timeEstimate'); if(te) te.textContent = estimate;
+  renderStages(stageIdx);
+}
+function renderLiveCarousel(proj) {
+  const el = document.getElementById('liveCarousel'); if(!el) return;
+  let cache={}; try{cache=JSON.parse(localStorage.getItem('ugc_image_cache_'+proj.folder)||'{}')}catch(e){}
+  const imgs = proj.images.slice(0, 8);
+  el.innerHTML = imgs.map(n => { const src = cache[n] || (proj.folder+'/'+n); return '<img src="' + src + '" class="w-20 h-20 rounded-xl object-cover border border-borderSubtle flex-shrink-0" loading="lazy">'; }).join('') + imgs.map(n => { const src = cache[n] || (proj.folder+'/'+n); return '<img src="' + src + '" class="w-20 h-20 rounded-xl object-cover border border-borderSubtle flex-shrink-0" loading="lazy">'; }).join('');
+}
 
 let projects = [
   {
@@ -322,50 +362,75 @@ async function generateUgcPrompts() {
   const resultsSection = document.getElementById('resultsSection');
   loadingSection.classList.remove('hidden');
   resultsSection.innerHTML = '';
-
+  renderLiveCarousel(proj);
+  updateStudioProgress(0, 60, 1, 4, 0, '~50s restantes');
+  proj.generatedIdeas = [];
   let cache = {};
   try { cache = JSON.parse(localStorage.getItem('ugc_image_cache_' + proj.folder) || '{}'); } catch(e) {}
-
-  // Monta parts com imagens para Gemini Vision (inlineData)
   const imageParts = [];
-  const maxImagesForVision = Math.min(6, proj.images.length);
+  const maxImagesForVision = Math.min(3, proj.images.length);
   for (let i = 0; i < maxImagesForVision; i++) {
     const imgName = proj.images[i];
     const dataUrl = cache[imgName];
     if (dataUrl && dataUrl.startsWith('data:')) {
-      const match = dataUrl.match(/^data:(.+);base64,(.+)$/);
-      if (match) imageParts.push({ inlineData: { mimeType: match[1], data: match[2] } });
+      const mm = dataUrl.match(/^data:(.+);base64,(.+)$/);
+      if (mm) imageParts.push({ inlineData: { mimeType: mm[1], data: mm[2] } });
     }
   }
-
-  const systemPrompt = 'MASTER PROMPT - GERADOR UGC TIKTOK SHOP PREMIUM\n\nROLE: You are Senior TikTok Shop Strategist, UGC Creative Director and Master Prompt Engineer for Google Flow (Image-to-Video Veo 3) specialized in premium country/western caps for "Rancho Forte / Ondas Bones / Era Mato". Your ONLY obsession is the physical perfection of the cap.\n\nPRODUCT UNDER ANALYSIS (analyze the ATTACHED IMAGES pixel by pixel):\n- Name: ' + proj.name + '\n- Folder: ' + proj.folder + '\n- Description & Craftsmanship: ' + proj.description + '\n- Available Image Ingredients (exact filenames): ' + JSON.stringify(proj.images) + '\n\nYOUR MISSION: Generate exactly 60 distinct, high-converting UGC video ideas for TikTok Shop. EVERY single idea must worship the cap details - texture, stitching, materials, finish and quality. Zero generic lifestyle, zero loose ideas.\n\nNON-NEGOTIABLE RULES (apply to ALL 60):\n1. NEVER talking heads / AI avatars speaking to camera.\n2. NEVER "Direto da Fabrica" format - focus 100% on final customer, product and authentic lifestyle.\n3. Lifestyle NEVER shows face - always faceless: back view, silhouette with brim covering eyes, nape, or first-person POV.\n4. Zero cartoon/plastic AI look - 100% real iPhone 15 Pro handheld UGC, natural warm daylight, shallow depth of field, authentic micro-movements.\n5. Real rustic masculine hands POV only: picking cap from light rustic wood table/beige sand background, fingers tracing 3D relief, testing brim rigidity, slow rotation to show breathable trucker mesh and snapback pins.\n6. STRICT ANTI-DISTORTION CLAUSE (mandatory in EVERY googleFlowPrompt, in English): Preserve exact trucker cap geometry, rigid curved brim shape, exact suede velvety texture, exact 3D medal/patch relief and embossing, exact zigzag stitching, exact snapback structure, exact original colors (no color shift), keep all embroidered text 100% legible without hallucinating fake letters. If the reference has cursive embroidery "A Cruz Sagrada seja a minha luz", keep it EXCLUSIVELY on the lower-right side of the front brim, never centered, never duplicated, with exact cursive font and curvature.\n\nDETAIL OBSESSION - EVERY PROMPT MUST DETAIL (use what you see in the images):\n- Material: premium suede velvety microfiber, light reflection, soft nap, grain\n- 3D patch: circular medal, high relief, engraved symbols (PAX, CSSML, NDSMD, VRSNSMV, SMQLIVB), contrast stitching, raised edges catching light\n- Brim: curved rigidity test, double stitching, edge thickness, embroidered cursive text position/color/thread sheen\n- Mesh & closure: breathable trucker mesh holes, snapback pins alignment, structured crown panels\n- Colorways: exact tones from images (off-white/bege, marrom cafe, caramelo rustic, blackout) - never invent new colors\n- Craftsmanship: stitch density, edge finishing, premium feel, tactile quality\n\nOUTPUT FORMAT - Return ONLY valid JSON {\"ideas\": [60 objects]} without markdown. Each object:\n- title (pt-BR, catchy, with detail hook)\n- hook (pt-BR, 3-second TikTok hook, 8-12 words, price/value/detail driven, e.g. "Suede que parece veludo por R$38,90?")\n- povAction (pt-BR, detailed real-hand POV action describing tactile interaction)\n- googleFlowPrompt (EN, MEGA-DETAILED 220-300 words, professional for Google Flow Image-to-Video): Start with "POV extreme macro / medium shot recorded on iPhone 15 Pro, 9:16 vertical, 4K ultra-realistic UGC, natural warm daylight on rustic light wood table with beige sand background, shallow depth of field, handheld subtle shake..." Then describe the specific hand action with tactile detail, then detail the cap physical attributes you analyzed (texture, relief, stitching, colors), then end with the STRICT ANTI-DISTORTION CLAUSE in caps. Must be copy-paste ready, single paragraph, English only.\n- recommendedImages: array with exactly 3 exact filenames from the provided list to use as Image Ingredients in Google Flow\n\nVARIETY: Distribute the 60 ideas across: 15x texture/tactile macro, 10x patch/embroidery detail, 10x brim/mesh/closure quality, 10x colorway comparison, 8x lifestyle faceless (POV wearing, back view with sunset), 7x unboxing/gift/detail. ALL must still focus on cap quality details.\n\nAnalyze the attached images now and generate the 60.';
-
-  // Fallback: se nao tem imagens em cache, envia so texto
-  const parts = [{ text: systemPrompt }].concat(imageParts);
-
-  try {
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=' + apiKey, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: parts }], generationConfig: { responseMimeType: "application/json", temperature: 0.7, maxOutputTokens: 65536 } })
-    });
-    if (!response.ok) { const errData = await response.json(); throw new Error(errData.error?.message || 'Erro Gemini API'); }
-    const data = await response.json();
-    const rawText = data.candidates[0].content.parts[0].text;
-    const parsedData = JSON.parse(rawText);
-    proj.generatedIdeas = parsedData.ideas;
-    localStorage.setItem(STORAGE_KEY_PROJECTS, JSON.stringify(projects));
-    saveIdeasToSupabase(proj);
-    loadingSection.classList.add('hidden');
-    renderVideoCards(proj.generatedIdeas);
-    showToast('60 roteiros gerados analisando as fotos da pasta! (Supabase salvo)', 'success');
-  } catch (error) {
-    console.error(error);
-    loadingSection.classList.add('hidden');
-    showToast('Erro: ' + error.message, 'error');
-    resultsSection.innerHTML = '<div class="p-6 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-center"><p class="text-rose-400 font-bold mb-2">Falha na geracao com Gemini API</p><p class="text-xs text-slate-300 mb-4">' + error.message + '</p><button onclick="generateUgcPrompts()" class="px-4 py-2 bg-caramel text-obsidian font-bold text-xs rounded-xl">Tentar Novamente</button></div>';
+  const systemPromptBase = 'MASTER PROMPT - GERADOR UGC TIKTOK SHOP PREMIUM\n\nROLE: You are Senior TikTok Shop Strategist, UGC Creative Director and Master Prompt Engineer for Google Flow (Image-to-Video Veo 3) specialized in premium country/western caps for "Rancho Forte / Ondas Bones / Era Mato". Your ONLY obsession is the physical perfection of the cap.\n\nPRODUCT UNDER ANALYSIS (analyze the ATTACHED IMAGES pixel by pixel):\n- Name: ' + proj.name + '\n- Folder: ' + proj.folder + '\n- Description & Craftsmanship: ' + proj.description + '\n- Available Image Ingredients (exact filenames): ' + JSON.stringify(proj.images) + '\n\nYOUR MISSION: Generate distinct, high-converting UGC video ideas for TikTok Shop. EVERY idea must worship the cap details - texture, stitching, materials, finish and quality.\n\nNON-NEGOTIABLE RULES (apply to ALL):\n1. NEVER talking heads / AI avatars speaking to camera.\n2. NEVER "Direto da Fabrica" format - focus 100% on final customer, product and authentic lifestyle.\n3. Lifestyle NEVER shows face - always faceless: back view, silhouette with brim covering eyes, nape, or first-person POV.\n4. Zero cartoon/plastic AI look - 100% real iPhone 15 Pro handheld UGC, natural warm daylight, shallow depth of field, authentic micro-movements.\n5. Real rustic masculine hands POV only: picking cap from light rustic wood table/beige sand background, fingers tracing 3D relief, testing brim rigidity, slow rotation to show breathable trucker mesh and snapback pins.\n6. STRICT ANTI-DISTORTION CLAUSE (mandatory in EVERY googleFlowPrompt, in English): Preserve exact trucker cap geometry, rigid curved brim shape, exact suede velvety texture, exact 3D medal/patch relief and embossing, exact zigzag stitching, exact snapback structure, exact original colors (no color shift), keep all embroidered text 100% legible without hallucinating fake letters. If the reference has cursive embroidery "A Cruz Sagrada seja a minha luz", keep it EXCLUSIVELY on the lower-right side of the front brim, never centered, never duplicated, with exact cursive font and curvature.\n\nDETAIL OBSESSION - EVERY PROMPT MUST DETAIL:\n- Material: premium suede velvety microfiber, light reflection, soft nap, grain\n- 3D patch: circular medal, high relief, engraved symbols (PAX, CSSML, NDSMD, VRSNSMV, SMQLIVB), contrast stitching, raised edges catching light\n- Brim: curved rigidity test, double stitching, edge thickness, embroidered cursive text position/color/thread sheen\n- Mesh & closure: breathable trucker mesh holes, snapback pins alignment, structured crown panels\n- Colorways: exact tones from images (off-white/bege, marrom cafe, caramelo rustic, blackout) - never invent new colors\n- Craftsmanship: stitch density, edge finishing, premium feel, tactile quality\n\nOUTPUT FORMAT - Return ONLY valid JSON {"ideas": [objects]} without markdown. Each object:\n- title (pt-BR, catchy, with detail hook)\n- hook (pt-BR, 3-second TikTok hook, 8-12 words)\n- povAction (pt-BR, detailed real-hand POV action)\n- googleFlowPrompt (EN, MEGA-DETAILED 220-300 words, professional for Google Flow Image-to-Video): Start with "POV extreme macro / medium shot recorded on iPhone 15 Pro, 9:16 vertical, 4K ultra-realistic UGC, natural warm daylight on rustic light wood table with beige sand background, shallow depth of field, handheld subtle shake..." Then describe specific hand action with tactile detail, then detail cap physical attributes you analyzed, then end with STRICT ANTI-DISTORTION CLAUSE in caps. Single paragraph, English only.\n- recommendedImages: array with exactly 3 exact filenames from the provided list\n';
+  const batchConfigs = [
+    { count: 15, focus: '15x texture/tactile macro - extreme close-ups of suede velvety nap, finger rubbing, light catching grain' },
+    { count: 15, focus: '15x patch/embroidery detail - 3D medal relief, engraved symbols, zigzag stitching, brim cursive position' },
+    { count: 15, focus: '15x brim/mesh/closure quality - brim rigidity test, snapback pins, breathable mesh holes, structured crown' },
+    { count: 15, focus: '15x colorway & lifestyle faceless + unboxing - color comparisons, back view/sunset POV, gift unboxing, all still focused on cap quality' }
+  ];
+  let allIdeas = [];
+  const startTime = Date.now();
+  for (let b = 0; b < batchConfigs.length; b++) {
+    const batch = batchConfigs[b];
+    const batchNum = b + 1;
+    const stageIdx = Math.min(b + 1, 5);
+    const elapsed = Math.round((Date.now() - startTime)/1000);
+    const avgPerBatch = b === 0 ? 12 : Math.round(elapsed / b);
+    const remaining = (batchConfigs.length - b) * avgPerBatch;
+    updateStudioProgress(allIdeas.length, 60, batchNum, 4, stageIdx, b === 0 ? '~45s restantes' : '~' + remaining + 's restantes');
+    const batchPrompt = systemPromptBase + '\nBATCH ' + batchNum + ' of 4: Generate exactly ' + batch.count + ' ideas focused on: ' + batch.focus + '. This is part of 60 total, do not repeat ideas from other batches. Return ONLY {"ideas":[15 objects]}.';
+    const parts = [{ text: batchPrompt }].concat(imageParts);
+    try {
+      updateStudioProgress(allIdeas.length, 60, batchNum, 4, stageIdx + 1, 'Gerando lote ' + batchNum + '...');
+      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=' + apiKey, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: parts }], generationConfig: { responseMimeType: "application/json", temperature: 0.75, maxOutputTokens: 16000 } })
+      });
+      if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'Erro Gemini API'); }
+      const data = await response.json();
+      const rawText = data.candidates[0].content.parts[0].text;
+      const parsed = JSON.parse(rawText);
+      const ideas = parsed.ideas || [];
+      allIdeas = allIdeas.concat(ideas);
+      proj.generatedIdeas = allIdeas.slice();
+      localStorage.setItem(STORAGE_KEY_PROJECTS, JSON.stringify(projects));
+      renderVideoCards(allIdeas);
+      updateStudioProgress(allIdeas.length, 60, batchNum, 4, Math.min(stageIdx+1,5), batchNum < 4 ? 'Lote ' + batchNum + ' concluido - indo para ' + (batchNum+1) + '...' : 'Finalizando...');
+      saveIdeasToSupabase(proj);
+      if (b < batchConfigs.length - 1) await new Promise(r => setTimeout(r, 600));
+    } catch (error) {
+      console.error('Batch ' + batchNum + ' failed', error);
+      showToast('Erro no lote ' + batchNum + ': ' + error.message, 'error');
+      if (allIdeas.length === 0) {
+        loadingSection.classList.add('hidden');
+        resultsSection.innerHTML = '<div class="p-6 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-center"><p class="text-rose-400 font-bold mb-2">Falha no lote ' + batchNum + '</p><p class="text-xs text-slate-300 mb-4">' + error.message + '</p><button onclick="generateUgcPrompts()" class="px-4 py-2 bg-caramel text-obsidian font-bold text-xs rounded-xl">Tentar Novamente</button></div>';
+        return;
+      }
+    }
   }
+  loadingSection.classList.add('hidden');
+  updateStudioProgress(60, 60, 4, 4, 5, 'Concluido!');
+  renderStages(6);
+  showToast('60 roteiros gerados em 4 lotes analisando as fotos!', 'success');
 }
+
 
 function renderVideoCards(ideas) {
   const resultsSection = document.getElementById('resultsSection');

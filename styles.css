@@ -35,3 +35,20 @@ body {
     border: 1px solid #242B3B;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
+
+/* Studio Ao Vivo - stage cards & SVG animations */
+.stage-card { transition: all 0.4s ease; }
+.stage-card.active { border-color: #D4A373 !important; background: rgba(212,163,115,0.08); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(212,163,115,0.12); }
+.stage-card.done { border-color: rgba(16,185,129,0.3) !important; background: rgba(16,185,129,0.06); }
+.stage-card .stage-icon { transition: all 0.4s ease; }
+.stage-card.active .stage-icon { transform: scale(1.08); }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
+@keyframes pulse-soft { 0%,100%{opacity:1} 50%{opacity:0.6} }
+@keyframes spin-slow { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+@keyframes draw { from{stroke-dashoffset: 20} to{stroke-dashoffset:0} }
+.svg-float { animation: float 3s ease-in-out infinite; }
+.svg-pulse { animation: pulse-soft 2s ease-in-out infinite; }
+.svg-spin { animation: spin-slow 4s linear infinite; }
+.carousel-track { animation: scroll 20s linear infinite; }
+@keyframes scroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+.live-dot { animation: pulse-soft 1.2s ease-in-out infinite; }
