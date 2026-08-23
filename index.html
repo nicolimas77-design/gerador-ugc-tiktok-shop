@@ -39,6 +39,34 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-obsidian text-slate-100 font-sans min-h-screen selection:bg-caramel/30 selection:text-caramel flex overflow-hidden">
+    <!-- Login Screen -->
+    <div id="loginView" class="fixed inset-0 z-[100] bg-obsidian flex items-center justify-center p-4 hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-caramel/[0.06] via-transparent to-tiktokCyan/[0.04] pointer-events-none"></div>
+        <div class="relative w-full max-w-sm bg-cardBg border border-borderSubtle rounded-[24px] p-8 shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
+            <div class="text-center mb-6">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-caramel to-caramelDark flex items-center justify-center font-bold text-obsidian text-lg mx-auto mb-3 shadow-lg shadow-caramel/20">RF</div>
+                <h1 class="text-lg font-extrabold text-white">UGC TikTok Shop</h1>
+                <p class="text-xs text-slate-400">by Nicolas Lima • Entre para ver suas pastas</p>
+            </div>
+            <div class="flex bg-obsidian rounded-xl p-1 border border-borderSubtle mb-5">
+                <button id="tabLogin" onclick="switchAuthTab('login')" class="flex-1 py-2 rounded-lg text-xs font-bold bg-caramel text-obsidian">Entrar</button>
+                <button id="tabSignup" onclick="switchAuthTab('signup')" class="flex-1 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white">Criar conta</button>
+            </div>
+            <form id="authForm" onsubmit="handleAuth(event)" class="space-y-3">
+                <div>
+                    <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Email</label>
+                    <input id="authEmail" type="email" required placeholder="seu@email.com" value="nicolimas77@gmail.com" class="mt-1 w-full bg-obsidian border border-borderSubtle rounded-xl px-4 py-3 text-sm text-white focus:border-caramel focus:outline-none">
+                </div>
+                <div>
+                    <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Senha</label>
+                    <input id="authPassword" type="password" required placeholder="••••••••" value="Nicolassss" class="mt-1 w-full bg-obsidian border border-borderSubtle rounded-xl px-4 py-3 text-sm text-white focus:border-caramel focus:outline-none">
+                </div>
+                <p id="authError" class="text-xs text-rose-400 hidden"></p>
+                <button id="authSubmitBtn" type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-caramel to-caramelDark text-obsidian font-bold text-sm shadow-lg shadow-caramel/20 hover:opacity-90 transition-opacity">Entrar</button>
+            </form>
+            <p class="text-[11px] text-slate-500 text-center mt-4">Sem confirmação por email • Suas pastas ficam salvas na sua conta</p>
+        </div>
+    </div>
 
     <!-- Sidebar Navigation (Google AI Studio Style) -->
     <aside id="sidebar" class="w-64 bg-slateDark border-r border-borderSubtle flex flex-col h-screen fixed lg:static z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0">
@@ -87,21 +115,24 @@
 
         <!-- Sidebar Footer / User Profile -->
         <div class="p-4 border-t border-borderSubtle bg-obsidian/40 flex items-center justify-between">
-            <div class="flex items-center space-x-2.5">
-                <div class="w-7 h-7 rounded-full bg-rose-600 flex items-center justify-center text-white text-xs font-bold">
-                    N
-                </div>
+            <div class="flex items-center space-x-2.5 flex-1 min-w-0">
+                <div class="w-7 h-7 rounded-full bg-rose-600 flex items-center justify-center text-white text-xs font-bold shrink-0" id="userAvatar">N</div>
                 <div class="overflow-hidden">
-                    <p class="text-xs font-semibold text-white truncate">nicolaslima77</p>
+                    <p class="text-xs font-semibold text-white truncate" id="userEmailDisplay">—</p>
                     <p class="text-[10px] text-emerald-400 flex items-center space-x-1">
                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                        <span>API Conectada</span>
+                        <span id="userStatus">Conectado</span>
                     </p>
                 </div>
             </div>
-            <button onclick="openSettingsModal()" class="text-slate-400 hover:text-caramel p-1.5 rounded-lg hover:bg-cardHover transition-colors" title="Configurações API">
-                <i data-lucide="settings" class="w-4 h-4"></i>
-            </button>
+            <div class="flex items-center gap-1">
+                <button onclick="openSettingsModal()" class="text-slate-400 hover:text-caramel p-1.5 rounded-lg hover:bg-cardHover transition-colors" title="Configurações API">
+                    <i data-lucide="settings" class="w-4 h-4"></i>
+                </button>
+                <button onclick="handleLogout()" class="text-slate-400 hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors" title="Sair">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                </button>
+            </div>
         </div>
     </aside>
 

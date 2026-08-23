@@ -8,6 +8,8 @@ const DEFAULT_GEMINI_KEY_B64 = 'QVEuQWI4Uk42SlBacXpVSGNZWWVfRU1YTm1OWDc2bmQtazA0
 let apiKey = localStorage.getItem(STORAGE_KEY_API_KEY) || (function(){ try{ return atob(DEFAULT_GEMINI_KEY_B64); }catch(e){ return ''; } })();
 let currentView = 'home';
 let currentProjectId = null;
+let currentUser = null;
+let authMode = 'login';
 
 function normalizeSupabaseUrl(u){ return (u||'').trim().replace(/\/rest\/v1\/?$/,'').replace(/\/$/,''); }
 function initSupabase() {
@@ -27,6 +29,88 @@ function updateSupabaseBadge(connected) {
   el.textContent = connected ? 'Conectado' : 'Desconectado';
   el.className = connected ? 'text-[10px] font-mono text-emerald-400' : 'text-[10px] font-mono text-slate-400';
 }
+async function checkAuth() {
+  if (!supabaseClient) return null;
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session && session.user) {
+    currentUser = session.user;
+    updateUserDisplay();
+    return session;
+  }
+  return null;
+}
+function showLogin() {
+  document.getElementById('loginView')?.classList.remove('hidden');
+  document.getElementById('sidebar')?.classList.add('hidden');
+  document.querySelector('.flex-1.flex-col')?.classList.add('hidden');
+}
+function hideLogin() {
+  document.getElementById('loginView')?.classList.add('hidden');
+  document.getElementById('sidebar')?.classList.remove('hidden');
+  document.querySelector('.flex-1.flex-col')?.classList.remove('hidden');
+  updateUserDisplay();
+}
+function updateUserDisplay() {
+  const el = document.getElementById('userEmailDisplay');
+  const av = document.getElementById('userAvatar');
+  if (currentUser && el) { el.textContent = currentUser.email; if(av) av.textContent = currentUser.email.charAt(0).toUpperCase(); }
+}
+function switchAuthTab(mode) {
+  authMode = mode;
+  document.getElementById('tabLogin').className = mode==='login' ? 'flex-1 py-2 rounded-lg text-xs font-bold bg-caramel text-obsidian' : 'flex-1 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white';
+  document.getElementById('tabSignup').className = mode==='signup' ? 'flex-1 py-2 rounded-lg text-xs font-bold bg-caramel text-obsidian' : 'flex-1 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white';
+  document.getElementById('authSubmitBtn').textContent = mode==='login' ? 'Entrar' : 'Criar conta';
+  document.getElementById('authError').classList.add('hidden');
+}
+async function handleAuth(e) {
+  e.preventDefault();
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const btn = document.getElementById('authSubmitBtn');
+  const errEl = document.getElementById('authError');
+  errEl.classList.add('hidden');
+  btn.disabled = true; btn.textContent = authMode==='login' ? 'Entrando...' : 'Criando...';
+  try {
+    let result;
+    if (authMode === 'login') {
+      result = await supabaseClient.auth.signInWithPassword({ email, password });
+    } else {
+      result = await supabaseClient.auth.signUp({ email, password });
+      if (result.data && result.data.user && !result.data.session) {
+        // autoconfirm is enabled, but fallback: try login immediately
+        result = await supabaseClient.auth.signInWithPassword({ email, password });
+      }
+    }
+    if (result.error) throw result.error;
+    currentUser = result.data.user || result.data.session?.user;
+    if (result.data.session) {
+      hideLogin();
+      projects = []; // will be loaded from supabase per user
+      localStorage.removeItem(STORAGE_KEY_PROJECTS);
+      // clear old cache
+      renderSidebarProjects(); renderHomeDashboard();
+      await syncProjectsFromSupabase();
+      // if new user with no projects, seed with empty (no default) - they create own
+      showToast(authMode==='login' ? 'Bem-vindo!' : 'Conta criada!', 'success');
+    } else {
+      throw new Error('Verifique seu email');
+    }
+  } catch (err) {
+    errEl.textContent = err.message || 'Erro ao autenticar';
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false; btn.textContent = authMode==='login' ? 'Entrar' : 'Criar conta';
+  }
+}
+async function handleLogout() {
+  if (supabaseClient) await supabaseClient.auth.signOut();
+  currentUser = null;
+  projects = [];
+  localStorage.removeItem(STORAGE_KEY_PROJECTS);
+  showLogin();
+  showToast('Desconectado', 'success');
+}
+
 async function syncProjectsFromSupabase() {
   if (!supabaseClient) return;
   try {
@@ -49,29 +133,30 @@ async function syncProjectsFromSupabase() {
   } catch(e){ console.warn(e); }
 }
 async function saveProjectToSupabase(proj) {
-  if (!supabaseClient) return;
-  try { await supabaseClient.from('projects').upsert({ id: proj.id, folder: proj.folder, name: proj.name, description: proj.description, images: proj.images }, { onConflict: 'id' }); } catch(e){ console.warn('saveProject', e.message); }
+  if (!supabaseClient || !currentUser) return;
+  try { await supabaseClient.from('projects').upsert({ id: proj.id, folder: proj.folder, name: proj.name, description: proj.description, images: proj.images, user_id: currentUser.id }, { onConflict: 'id' }); } catch(e){ console.warn('saveProject', e.message); }
 }
 async function deleteProjectFromSupabase(projectId) {
   if (!supabaseClient) return;
   try { await supabaseClient.from('projects').delete().eq('id', projectId); await supabaseClient.from('generated_ideas').delete().eq('project_id', projectId); } catch(e){}
 }
 async function uploadImagesToSupabase(folder, files) {
-  if (!supabaseClient || !files || files.length===0) return;
+  if (!supabaseClient || !files || files.length===0 || !currentUser) return;
   for (const file of files) {
-    try { await supabaseClient.storage.from('cap-images').upload(folder + '/' + file.name, file, { upsert: true, contentType: file.type }); } catch(e){ console.warn('upload', file.name, e.message); }
+    try { await supabaseClient.storage.from('cap-images').upload(currentUser.id + '/' + folder + '/' + file.name, file, { upsert: true, contentType: file.type }); } catch(e){ console.warn('upload', file.name, e.message); }
   }
 }
 async function saveIdeasToSupabase(proj) {
   if (!supabaseClient || !proj.generatedIdeas || !proj.generatedIdeas.length) return;
   try {
     await supabaseClient.from('generated_ideas').delete().eq('project_id', proj.id);
-    const rows = proj.generatedIdeas.map((idea, idx) => ({ project_id: proj.id, idx: idx, title: idea.title, hook: idea.hook, pov_action: idea.povAction, google_flow_prompt: idea.googleFlowPrompt, recommended_images: idea.recommendedImages }));
+    const rows = proj.generatedIdeas.map((idea, idx) => ({ project_id: proj.id, idx: idx, title: idea.title, hook: idea.hook, pov_action: idea.povAction, google_flow_prompt: idea.googleFlowPrompt, recommended_images: idea.recommendedImages, user_id: currentUser.id }));
     // insere em lotes de 20 para nao estourar
     for (let i=0;i<rows.length;i+=20){ await supabaseClient.from('generated_ideas').insert(rows.slice(i,i+20)); }
   } catch(e){ console.warn('saveIdeas', e.message); }
 }
 function supabasePublicUrl(folder, filename) {
+  if (currentUser) return 'https://gbucaafkdssbldqndhog.supabase.co/storage/v1/object/public/cap-images/' + currentUser.id + '/' + folder + '/' + encodeURIComponent(filename);
   return 'https://gbucaafkdssbldqndhog.supabase.co/storage/v1/object/public/cap-images/' + folder + '/' + encodeURIComponent(filename);
 }
 const STUDIO_STAGES = [
@@ -150,22 +235,38 @@ let projects = [
   }
 ];
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const savedKey = localStorage.getItem(STORAGE_KEY_API_KEY);
   if (savedKey) apiKey = savedKey;
-  const savedProjects = localStorage.getItem(STORAGE_KEY_PROJECTS);
-  if (savedProjects) {
-    try {
-      const parsed = JSON.parse(savedProjects);
-      // migracao: garante que saobento/abacurvapatch tenham imagens corretas se vazias
-      projects = parsed;
-    } catch(e) {}
-  }
   initSupabase();
-  renderSidebarProjects();
-  renderHomeDashboard();
-  syncProjectsFromSupabase();
+  // Check auth first - each user has own folders
+  const session = await checkAuth();
+  if (!session) {
+    showLogin();
+  } else {
+    hideLogin();
+    const savedProjects = localStorage.getItem(STORAGE_KEY_PROJECTS);
+    if (savedProjects) {
+      try { projects = JSON.parse(savedProjects); } catch(e) {}
+    }
+    renderSidebarProjects();
+    renderHomeDashboard();
+    syncProjectsFromSupabase();
+  }
   lucide.createIcons();
+  if (supabaseClient) {
+    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        currentUser = session.user;
+        hideLogin();
+        await syncProjectsFromSupabase();
+        updateUserDisplay();
+      } else if (event === 'SIGNED_OUT') {
+        currentUser = null;
+        showLogin();
+      }
+    });
+  }
   document.getElementById('openSidebarBtn').addEventListener('click', () => {
     document.getElementById('sidebar').classList.remove('-translate-x-full');
   });
