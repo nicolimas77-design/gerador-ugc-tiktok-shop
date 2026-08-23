@@ -178,7 +178,7 @@ function renderProjectGenerator(proj) {
     imgGrid.innerHTML = '<p class="text-xs text-slate-400 col-span-full p-4 border border-dashed border-borderSubtle rounded-xl text-center">Nenhuma imagem anexada nesta pasta. Anexe a pasta de fotos ao criar o projeto.</p>';
   } else {
     imgGrid.innerHTML = proj.images.map((img, idx) => {
-      const imgSrc = cache[img] || supabasePublicUrl(proj.folder, img);
+      const imgSrc = cache[img] || (proj.folder + '/' + img);
       return '<div class="relative bg-slateDark border border-borderSubtle rounded-xl overflow-hidden aspect-square flex items-center justify-center group" title="' + img + '"><img src="' + imgSrc + '" alt="' + img + '" class="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><div class="w-full h-full hidden items-center justify-center bg-obsidian text-[10px] text-slate-500 p-2 text-center flex-col"><span>Imagem nao encontrada</span><span class="font-mono text-caramel text-[9px] break-all">' + img + '</span></div><div class="absolute inset-0 bg-obsidian/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none"><span class="text-[9px] font-mono text-caramel font-bold">#' + (idx+1) + '</span></div></div>';
     }).join('');
   }
