@@ -484,6 +484,8 @@ async function generateUgcPrompts() {
   loadingSection.classList.remove('hidden');
   resultsSection.innerHTML = '';
   renderLiveCarousel(proj);
+  const pidEl = document.getElementById('productIdentifiedName'); if(pidEl) pidEl.textContent = proj.name;
+  lucide.createIcons();
   updateStudioProgress(0, 60, 1, 4, 0, '~50s restantes');
   proj.generatedIdeas = [];
   let cache = {};
