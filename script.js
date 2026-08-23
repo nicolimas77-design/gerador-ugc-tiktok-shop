@@ -25,6 +25,53 @@ function updateSupabaseBadge(connected) {
   el.textContent = connected ? 'Conectado' : 'Desconectado';
   el.className = connected ? 'text-[10px] font-mono text-emerald-400' : 'text-[10px] font-mono text-slate-400';
 }
+async function syncProjectsFromSupabase() {
+  if (!supabaseClient) return;
+  try {
+    const { data, error } = await supabaseClient.from('projects').select('*').order('created_at');
+    if (error) { console.warn('Supabase load', error.message); return; }
+    if (data && data.length > 0) {
+      const mapped = data.map(r => ({ id: r.id, folder: r.folder, name: r.name, description: r.description, images: Array.isArray(r.images) ? r.images : JSON.parse(r.images||'[]'), generatedIdeas: [] }));
+      // carrega ideias de cada projeto
+      for (const proj of mapped) {
+        try {
+          const { data: ideas } = await supabaseClient.from('generated_ideas').select('*').eq('project_id', proj.id).order('idx');
+          if (ideas && ideas.length) proj.generatedIdeas = ideas.map(it => ({ title: it.title, hook: it.hook, povAction: it.pov_action, googleFlowPrompt: it.google_flow_prompt, recommendedImages: it.recommended_images }));
+        } catch(e){}
+      }
+      projects = mapped;
+      localStorage.setItem(STORAGE_KEY_PROJECTS, JSON.stringify(projects));
+      renderSidebarProjects(); renderHomeDashboard();
+      if (currentView === 'generator' && currentProjectId) { const pr = projects.find(x=>x.id===currentProjectId); if(pr) renderProjectGenerator(pr); }
+    }
+  } catch(e){ console.warn(e); }
+}
+async function saveProjectToSupabase(proj) {
+  if (!supabaseClient) return;
+  try { await supabaseClient.from('projects').upsert({ id: proj.id, folder: proj.folder, name: proj.name, description: proj.description, images: proj.images }, { onConflict: 'id' }); } catch(e){ console.warn('saveProject', e.message); }
+}
+async function deleteProjectFromSupabase(projectId) {
+  if (!supabaseClient) return;
+  try { await supabaseClient.from('projects').delete().eq('id', projectId); await supabaseClient.from('generated_ideas').delete().eq('project_id', projectId); } catch(e){}
+}
+async function uploadImagesToSupabase(folder, files) {
+  if (!supabaseClient || !files || files.length===0) return;
+  for (const file of files) {
+    try { await supabaseClient.storage.from('cap-images').upload(folder + '/' + file.name, file, { upsert: true, contentType: file.type }); } catch(e){ console.warn('upload', file.name, e.message); }
+  }
+}
+async function saveIdeasToSupabase(proj) {
+  if (!supabaseClient || !proj.generatedIdeas || !proj.generatedIdeas.length) return;
+  try {
+    await supabaseClient.from('generated_ideas').delete().eq('project_id', proj.id);
+    const rows = proj.generatedIdeas.map((idea, idx) => ({ project_id: proj.id, idx: idx, title: idea.title, hook: idea.hook, pov_action: idea.povAction, google_flow_prompt: idea.googleFlowPrompt, recommended_images: idea.recommendedImages }));
+    // insere em lotes de 20 para nao estourar
+    for (let i=0;i<rows.length;i+=20){ await supabaseClient.from('generated_ideas').insert(rows.slice(i,i+20)); }
+  } catch(e){ console.warn('saveIdeas', e.message); }
+}
+function supabasePublicUrl(folder, filename) {
+  return 'https://gbucaafkdssbldqndhog.supabase.co/storage/v1/object/public/cap-images/' + folder + '/' + encodeURIComponent(filename);
+}
 
 let projects = [
   {
@@ -59,6 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initSupabase();
   renderSidebarProjects();
   renderHomeDashboard();
+  syncProjectsFromSupabase();
   lucide.createIcons();
   document.getElementById('openSidebarBtn').addEventListener('click', () => {
     document.getElementById('sidebar').classList.remove('-translate-x-full');
@@ -130,7 +178,7 @@ function renderProjectGenerator(proj) {
     imgGrid.innerHTML = '<p class="text-xs text-slate-400 col-span-full p-4 border border-dashed border-borderSubtle rounded-xl text-center">Nenhuma imagem anexada nesta pasta. Anexe a pasta de fotos ao criar o projeto.</p>';
   } else {
     imgGrid.innerHTML = proj.images.map((img, idx) => {
-      const imgSrc = cache[img] || (proj.folder + '/' + img);
+      const imgSrc = cache[img] || supabasePublicUrl(proj.folder, img);
       return '<div class="relative bg-slateDark border border-borderSubtle rounded-xl overflow-hidden aspect-square flex items-center justify-center group" title="' + img + '"><img src="' + imgSrc + '" alt="' + img + '" class="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><div class="w-full h-full hidden items-center justify-center bg-obsidian text-[10px] text-slate-500 p-2 text-center flex-col"><span>Imagem nao encontrada</span><span class="font-mono text-caramel text-[9px] break-all">' + img + '</span></div><div class="absolute inset-0 bg-obsidian/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none"><span class="text-[9px] font-mono text-caramel font-bold">#' + (idx+1) + '</span></div></div>';
     }).join('');
   }
@@ -184,14 +232,18 @@ function handleCreateProject(e) {
   const imagesRaw = document.getElementById('newProjImages').value.trim();
 
   let files = [];
+  let rawFilesForUpload = [];
   if (folderInput && folderInput.files && folderInput.files.length > 0) {
     files = Array.from(folderInput.files).filter(f => f.type.startsWith('image/'));
+    rawFilesForUpload = files.slice();
   } else if (fileInput.files && fileInput.files.length > 0) {
     files = Array.from(fileInput.files);
+    rawFilesForUpload = files.slice();
   }
 
   if (files.length > 0) {
     const imageNames = files.map(f => f.name);
+    window._pendingUploadFiles = rawFilesForUpload;
     let loadedCount = 0;
     const imageMap = {};
     files.forEach(file => {
@@ -226,11 +278,16 @@ function finalizeProject(folder, name, description, images, imageMap) {
   const newProj = { id: folder + '-' + Date.now(), folder: folder, name: name, description: description, images: images, generatedIdeas: [] };
   projects.push(newProj);
   localStorage.setItem(STORAGE_KEY_PROJECTS, JSON.stringify(projects));
+  saveProjectToSupabase(newProj);
+  if (window._pendingUploadFiles && window._pendingUploadFiles.length) {
+    uploadImagesToSupabase(folder, window._pendingUploadFiles);
+    window._pendingUploadFiles = null;
+  }
   closeNewProjectModal();
   document.getElementById('newProjectForm').reset();
   renderSidebarProjects();
   switchView('generator', newProj.id);
-  showToast('Pasta /' + folder + ' criada com ' + images.length + ' imagens!', 'success');
+  showToast('Pasta /' + folder + ' criada com ' + images.length + ' imagens! (Supabase sync)', 'success');
 }
 
 function deleteProject(projectId) {
@@ -240,6 +297,7 @@ function deleteProject(projectId) {
   projects = projects.filter(p => p.id !== projectId);
   localStorage.setItem(STORAGE_KEY_PROJECTS, JSON.stringify(projects));
   try { localStorage.removeItem('ugc_image_cache_' + proj.folder); } catch(e){}
+  deleteProjectFromSupabase(projectId);
   if (currentProjectId === projectId) {
     currentProjectId = null;
     switchView('home');
@@ -247,7 +305,7 @@ function deleteProject(projectId) {
     renderSidebarProjects();
     renderHomeDashboard();
   }
-  showToast('Pasta /' + proj.folder + ' apagada.', 'success');
+  showToast('Pasta /' + proj.folder + ' apagada. (Supabase)', 'success');
 }
 function deleteCurrentProject() {
   if (!currentProjectId) { showToast('Nenhuma pasta selecionada.', 'error'); return; }
@@ -297,9 +355,10 @@ async function generateUgcPrompts() {
     const parsedData = JSON.parse(rawText);
     proj.generatedIdeas = parsedData.ideas;
     localStorage.setItem(STORAGE_KEY_PROJECTS, JSON.stringify(projects));
+    saveIdeasToSupabase(proj);
     loadingSection.classList.add('hidden');
     renderVideoCards(proj.generatedIdeas);
-    showToast('60 roteiros gerados analisando as fotos da pasta!', 'success');
+    showToast('60 roteiros gerados analisando as fotos da pasta! (Supabase salvo)', 'success');
   } catch (error) {
     console.error(error);
     loadingSection.classList.add('hidden');
