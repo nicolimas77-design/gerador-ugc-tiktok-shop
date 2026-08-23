@@ -36,19 +36,21 @@ body {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-/* Studio Ao Vivo - stage cards & SVG animations */
-.stage-card { transition: all 0.4s ease; }
-.stage-card.active { border-color: #D4A373 !important; background: rgba(212,163,115,0.08); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(212,163,115,0.12); }
-.stage-card.done { border-color: rgba(16,185,129,0.3) !important; background: rgba(16,185,129,0.06); }
-.stage-card .stage-icon { transition: all 0.4s ease; }
-.stage-card.active .stage-icon { transform: scale(1.08); }
-@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
-@keyframes pulse-soft { 0%,100%{opacity:1} 50%{opacity:0.6} }
+/* Studio Ao Vivo - hero floating card */
+#studioHero { animation: heroFloat 6s ease-in-out infinite; }
+@keyframes heroFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+#heroIcon svg { width: 72px; height: 72px; filter: drop-shadow(0 8px 24px rgba(212,163,115,0.25)); }
+@media (min-width: 640px){ #heroIcon svg{ width:84px; height:84px; } }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+@keyframes pulse-soft { 0%,100%{opacity:1} 50%{opacity:0.55} }
 @keyframes spin-slow { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-@keyframes draw { from{stroke-dashoffset: 20} to{stroke-dashoffset:0} }
-.svg-float { animation: float 3s ease-in-out infinite; }
+@keyframes glow { 0%,100%{opacity:0.6} 50%{opacity:1} }
+.svg-float { animation: float 3.2s ease-in-out infinite; }
 .svg-pulse { animation: pulse-soft 2s ease-in-out infinite; }
-.svg-spin { animation: spin-slow 4s linear infinite; }
-.carousel-track { animation: scroll 20s linear infinite; }
-@keyframes scroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+.svg-spin { animation: spin-slow 6s linear infinite; }
+.svg-glow { animation: glow 2.4s ease-in-out infinite; }
 .live-dot { animation: pulse-soft 1.2s ease-in-out infinite; }
+.hero-dot { width:8px; height:8px; border-radius:9999px; transition: all 0.4s ease; }
+.hero-dot.active { background:#D4A373; box-shadow:0 0 10px rgba(212,163,115,0.6); transform:scale(1.25); }
+.hero-dot.done { background:#10b981; }
+.hero-dot.idle { background:#334155; }

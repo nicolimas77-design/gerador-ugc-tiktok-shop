@@ -81,21 +81,37 @@ const STUDIO_STAGES = [
   { label: 'Blindando anti-dist.', sub: 'geometria & cor', icon: 'shield' }
 ];
 function renderStages(activeIdx) {
-  const grid = document.getElementById('stagesGrid');
-  if (!grid) return;
+  const heroIcon = document.getElementById('heroIcon');
+  const heroLabel = document.getElementById('heroStageLabel');
+  const heroSub = document.getElementById('heroStageSub');
+  const heroStatus = document.getElementById('heroStageStatus');
+  const heroDots = document.getElementById('heroDots');
+  const idx = Math.max(0, Math.min(activeIdx, STUDIO_STAGES.length - 1));
+  const stage = STUDIO_STAGES[idx] || STUDIO_STAGES[0];
   const icons = {
-    texture: '<svg class="w-7 h-7 svg-float" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9" stroke-dasharray="4 4"/></svg>',
-    patch: '<svg class="w-7 h-7 svg-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="M12 8v8M8 12h8"/></svg>',
-    stitch: '<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 12h16" stroke-dasharray="6 3"/><path d="M6 8l2 4-2 4M18 8l-2 4 2 4"/></svg>',
-    hook: '<svg class="w-7 h-7 svg-float" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>',
-    prompt: '<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="3" width="16" height="17" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',
-    shield: '<svg class="w-7 h-7 svg-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l7 4v6c0 4-3 6-7 8-4-2-7-4-7-8V7l7-4z"/><path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    texture: '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.6" class="svg-float svg-glow"><rect x="10" y="10" width="44" height="44" rx="10" stroke-opacity="0.9"/><path d="M10 26h44M26 54V26" stroke-dasharray="6 4" stroke-linecap="round"/><circle cx="32" cy="32" r="3" fill="currentColor" fill-opacity="0.15"/></svg>',
+    patch: '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.7" class="svg-pulse"><circle cx="32" cy="32" r="20" stroke-opacity="0.9"/><circle cx="32" cy="32" r="10" fill="currentColor" fill-opacity="0.08"/><path d="M32 20v24M20 32h24" stroke-linecap="round"/><circle cx="32" cy="32" r="3" fill="currentColor"/></svg>',
+    stitch: '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.7" class="svg-float"><path d="M12 32h40" stroke-dasharray="8 4" stroke-linecap="round"/><path d="M18 20l5 12-5 12M46 20l-5 12 5 12" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    hook: '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.8" class="svg-float"><path d="M34 8L14 32h12l-3 20 26-28H37l4-16z" stroke-linejoin="round" stroke-linecap="round" fill="currentColor" fill-opacity="0.06"/></svg>',
+    prompt: '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.6" class="svg-pulse"><rect x="14" y="10" width="36" height="38" rx="8"/><path d="M22 24h20M22 32h20M22 40h12" stroke-linecap="round"/><circle cx="46" cy="46" r="4" fill="currentColor" fill-opacity="0.12"/></svg>',
+    shield: '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.7" class="svg-glow"><path d="M32 10l18 9v12c0 9-6 15-18 21-12-6-18-12-18-21V19l18-9z" stroke-linejoin="round"/><path d="M23 32l6 6 12-12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"/></svg>'
   };
-  grid.innerHTML = STUDIO_STAGES.map((s, i) => {
-    const state = i < activeIdx ? 'done' : i === activeIdx ? 'active' : '';
-    const dot = i < activeIdx ? '<span class="w-2 h-2 rounded-full bg-emerald-500"></span>' : i === activeIdx ? '<span class="w-2 h-2 rounded-full bg-caramel live-dot"></span>' : '<span class="w-2 h-2 rounded-full bg-slate-600"></span>';
-    return '<div class="stage-card bg-obsidian border border-borderSubtle rounded-xl p-3 flex flex-col items-center text-center gap-2 ' + state + '"><div class="stage-icon w-10 h-10 rounded-xl bg-cardBg border border-borderSubtle flex items-center justify-center ' + (i===activeIdx?'text-caramel border-caramel/30': i<activeIdx?'text-emerald-400 border-emerald-500/20':'text-slate-500') + '">' + icons[s.icon] + '</div><div><p class="text-[11px] font-bold ' + (i<=activeIdx?'text-white':'text-slate-400') + '">' + s.label + '</p><p class="text-[10px] text-slate-500">' + s.sub + '</p></div><div class="flex items-center gap-1 mt-1">' + dot + '<span class="text-[10px] font-mono ' + (i<activeIdx?'text-emerald-400': i===activeIdx?'text-caramel':'text-slate-500') + '">' + (i<activeIdx?'concluido': i===activeIdx?'ao vivo':'pendente') + '</span></div></div>';
-  }).join('');
+  if (heroIcon) heroIcon.innerHTML = icons[stage.icon] || icons.texture;
+  if (heroLabel) heroLabel.textContent = stage.label;
+  if (heroSub) heroSub.textContent = stage.sub;
+  if (heroStatus) {
+    const isDone = activeIdx >= STUDIO_STAGES.length;
+    heroStatus.textContent = isDone ? 'concluido' : 'ao vivo';
+    heroStatus.className = isDone ? 'text-xs font-mono font-bold text-emerald-400' : 'text-xs font-mono font-bold text-caramel';
+  }
+  if (heroDots) {
+    heroDots.innerHTML = STUDIO_STAGES.map((_, i) => {
+      const cls = i < idx ? 'hero-dot done' : i === idx ? 'hero-dot active' : 'hero-dot idle';
+      return '<span class="' + cls + '"></span>';
+    }).join('');
+  }
+  const grid = document.getElementById('stagesGrid');
+  if (grid) grid.innerHTML = '';
 }
 function updateStudioProgress(done, total, batch, totalBatches, stageIdx, estimate) {
   const pct = Math.round((done/total)*100);
