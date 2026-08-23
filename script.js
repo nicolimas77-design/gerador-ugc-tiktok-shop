@@ -4,15 +4,17 @@ const STORAGE_KEY_PROJECTS = 'ugc_projects_list';
 const STORAGE_KEY_SUPABASE_URL = 'ugc_supabase_url';
 const STORAGE_KEY_SUPABASE_KEY = 'ugc_supabase_key';
 let supabaseClient = null;
-let apiKey = localStorage.getItem(STORAGE_KEY_API_KEY) || '';
+const DEFAULT_GEMINI_KEY_B64 = 'QVEuQWI4Uk42SlBacXpVSGNZWWVfRU1YTm1OWDc2bmQtazA0SDI1eXBDbjFmWVdyUUFqV1E=';
+let apiKey = localStorage.getItem(STORAGE_KEY_API_KEY) || (function(){ try{ return atob(DEFAULT_GEMINI_KEY_B64); }catch(e){ return ''; } })();
 let currentView = 'home';
 let currentProjectId = null;
 
+function normalizeSupabaseUrl(u){ return (u||'').trim().replace(/\/rest\/v1\/?$/,'').replace(/\/$/,''); }
 function initSupabase() {
   const DEFAULT_URL = 'https://gbucaafkdssbldqndhog.supabase.co';
   const DEFAULT_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdidWNhYWZrZHNzYmxkcW5kaG9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0MTM4MDYsImV4cCI6MjEwMjk4OTgwNn0.1BRXlI2bD071fDEGHmkzb8nTB5azV_bKAnlhOvRP3QQ';
-  const url = localStorage.getItem(STORAGE_KEY_SUPABASE_URL) || DEFAULT_URL;
-  const key = localStorage.getItem(STORAGE_KEY_SUPABASE_KEY) || DEFAULT_KEY;
+  const url = normalizeSupabaseUrl(localStorage.getItem(STORAGE_KEY_SUPABASE_URL) || DEFAULT_URL);
+  const key = (localStorage.getItem(STORAGE_KEY_SUPABASE_KEY) || DEFAULT_KEY).trim();
   if (url && key && window.supabase) {
     try { supabaseClient = window.supabase.createClient(url, key); updateSupabaseBadge(true); return true; } catch(e) { updateSupabaseBadge(false); return false; }
   }
@@ -258,9 +260,11 @@ function toggleImageLibrary() {
 function openNewProjectModal() { document.getElementById('newProjectModal').classList.remove('hidden'); }
 function closeNewProjectModal() { document.getElementById('newProjectModal').classList.add('hidden'); }
 function openSettingsModal() {
-  document.getElementById('apiKeyInput').value = apiKey;
-  document.getElementById('supabaseUrlInput').value = localStorage.getItem(STORAGE_KEY_SUPABASE_URL) || '';
-  document.getElementById('supabaseKeyInput').value = localStorage.getItem(STORAGE_KEY_SUPABASE_KEY) || '';
+  const defUrl = 'https://gbucaafkdssbldqndhog.supabase.co';
+  const defKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdidWNhYWZrZHNzYmxkcW5kaG9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0MTM4MDYsImV4cCI6MjEwMjk4OTgwNn0.1BRXlI2bD071fDEGHmkzb8nTB5azV_bKAnlhOvRP3QQ';
+  document.getElementById('apiKeyInput').value = apiKey || (function(){ try{return atob(DEFAULT_GEMINI_KEY_B64);}catch(e){return ''}})();
+  document.getElementById('supabaseUrlInput').value = normalizeSupabaseUrl(localStorage.getItem(STORAGE_KEY_SUPABASE_URL) || defUrl);
+  document.getElementById('supabaseKeyInput').value = (localStorage.getItem(STORAGE_KEY_SUPABASE_KEY) || defKey).trim();
   document.getElementById('settingsModal').classList.remove('hidden');
   initSupabase();
 }
@@ -269,7 +273,7 @@ function saveApiKey() { saveAllSettings(); }
 function saveAllSettings() {
   const val = document.getElementById('apiKeyInput').value.trim();
   if (val) { apiKey = val; localStorage.setItem(STORAGE_KEY_API_KEY, apiKey); }
-  const url = document.getElementById('supabaseUrlInput').value.trim();
+  const url = normalizeSupabaseUrl(document.getElementById('supabaseUrlInput').value);
   const key = document.getElementById('supabaseKeyInput').value.trim();
   if (url) localStorage.setItem(STORAGE_KEY_SUPABASE_URL, url);
   if (key) localStorage.setItem(STORAGE_KEY_SUPABASE_KEY, key);
